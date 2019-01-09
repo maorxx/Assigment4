@@ -30,6 +30,7 @@ def create_tables():
 def insert_course(id, course_name, student,number_of_students,class_id,course_length):
     cursor.execute("INSERT INTO students VALUES (?, ?, ?,?,?)", [id, course_name, student,number_of_students,class_id,course_length])
 
+jhjhjhj
 with open(sys.argv[1]) as input:
     for line in input:
         line=line.split(',')

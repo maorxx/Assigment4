@@ -53,9 +53,8 @@ with open(sys.argv[1]) as input:
 
 def create_list_of_tuples(table):
     cursor.execute('SELECT * FROM ' + table)
-    list = cursor.fetchall()
-    return list
-
+    ls = cursor.fetchall()
+    return ls
 
 def print_table(list_of_tuples):
     for item in list_of_tuples:

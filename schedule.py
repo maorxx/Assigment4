@@ -5,5 +5,9 @@ import sys
 
 
 DBExist = os.path.isfile('schedule.db')
-while DBExist: #need to check if courses is empty
+dbcon = sqlite3.connect('schedule.db')
+cursor = dbcon.cursor()
+
+
+while DBExist and 
 

@@ -1,38 +1,86 @@
-import sqlite3 	# importing the sqlite3 library will result in a sqlite3 variable
-import os 		# os.path.isfile()
+import sqlite3
+import os
 import sys
+import atexit
+
+
+def close_db():
+    cursor.close()
+    dbcon.close()
+
+
+atexit.register(close_db)
 
 DBExist = os.path.isfile('schedule.db')
-if not DBExist:
+if not DBExist: #if database was not found exit
     print('DB not found')
     sys.exit()
 
-#DB found
+# database found
 dbcon = sqlite3.connect('schedule.db')
 cursor = dbcon.cursor()
-cursor.execute('SELECT * FROM ' + 'courses')
-lst = cursor.fetchall()
-num_of_courses=len(lst)
 
+
+def create_list_of_tuples(table):
+    cursor.execute('SELECT * FROM ' + table)
+    return cursor.fetchall()
+
+
+def print_table(list_of_tuples):
+    for item in list_of_tuples:
+        print(item)
+
+
+def print_tables():
+    print('courses')
+    print_table(create_list_of_tuples('courses'))
+    print('students')
+    print_table(create_list_of_tuples('students'))
+    print('classrooms')
+    print_table(create_list_of_tuples('classrooms'))
+    print('\n')
+
+
+# check if there are courses left in the database
+def isempty():
+    cursor.execute('SELECT * FROM ' + 'courses')
+    return len(cursor.fetchall()) == 0
+
+
+# returns a list of available classes
+def get_available_classes():
+    cursor.execute('SELECT * FROM classrooms where classrooms.current_course_time_left = 0')
+    return cursor.fetchall()
+
+
+# returns a course with class_id
 def get_course(class_id):
-    cursor.execute('SELECT courses.course_length from courses where courses.class_id =' + class_id)
-    course_length = cursor.fetchone()
-    return course_length[0]
+    cursor.execute('SELECT * from courses where courses.class_id ={}'.format(class_id))
+    return cursor.fetchone()
 
 
-while DBExist and num_of_courses > 0:
-    #class room is free
-    cursor.execute('SELECT classrooms.id FROM classrooms where classrooms.current_course_time_left = 0')
-    free_classroom_ids = cursor.fetchall()
-    for row in free_classroom_ids:
-        course_length = get_course(str(row[0]))
-        cursor.execute('UPDATE classrooms set current_course_time_left =' + str(course_length) + 'where ID =' + str(row[0]))
-        # print(cursor.execute('SELECT classrooms.current_course_time FROM classrooms'))
+print_tables()
+# main loop
+i = 0
+while DBExist and not isempty():
+    available_classes=get_available_classes()
+    if len(available_classes)> 0:   #case 1 = there are available classes
+        for class_room in available_classes:
+            course_to_assign=get_course(class_room[0])
+            print(('({}) {}: {} is schedule to start').format(i,class_room[1],course_to_assign[1]))
+            cursor.execute('UPDATE classrooms SET current_course_id={},current_course_time_left={} where ID={}'
+                           .format(course_to_assign[0],course_to_assign[5],course_to_assign[4]))
+            sql='UPDATE students SET students.count = %d where grade = %s '
+            val=(course_to_assign[3],course_to_assign[2])
+            cursor.execute(sql,val)
+            # cursor.execute('UPDATE students SET students.count= %d where grade=%s' % (count,grade))
+            # #cursor.execute('UPDATE students SET students.count = {} where grade ={}'.format(count,grade))
+        print_tables()
+        i+=1
     break
-    #class room is occupied
-
 
     #course just finished
+
 
 
 

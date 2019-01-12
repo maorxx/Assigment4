@@ -1,70 +1,81 @@
-import sqlite3 	# importing the sqlite3 library will result in a sqlite3 variable
-import os 		# os.path.isfile()
+import sqlite3
+import os
 import atexit
 import sys
 
 DBExist = os.path.isfile('schedule.db')
-if DBExist:
+if DBExist: #if database already exists, exit.
     sys.exit()
 
-else:  # not DBExist
+else:
     dbcon = sqlite3.connect('schedule.db')
     cursor = dbcon.cursor()
+
 
 def close_db():
     dbcon.commit()
     cursor.close()
     dbcon.close()
-    #os.remove('schedule.db')
+
 
 atexit.register(close_db)
+
 
 def create_tables():
     if not DBExist:  # First time creating the database tables.
         cursor.execute(""" CREATE TABLE courses (id INTEGER PRIMARY KEY , course_name TEXT NOT NULL,student TEXT,number_of_students INTEGER NOT NULL,
                                       class_id INTEGER REFERENCES classrooms(id),course_length INTEGER NOT NULL)""")
-        cursor.execute("""CREATE TABLE students (gradeTEXT PRIMARY KEY , count INTEGER NOT NULL)""")
-        cursor.execute(""" CREATE TABLE classrooms (ID INTEGER PRIMARY KEY , LOCATION TEXT NOT NULL , current_course_id INTEGER NOT NULL ,
+        cursor.execute("""CREATE TABLE students (grade TEXT PRIMARY KEY , count INTEGER NOT NULL)""")
+        cursor.execute(""" CREATE TABLE classrooms (id INTEGER PRIMARY KEY , location TEXT NOT NULL , current_course_id INTEGER NOT NULL ,
                                  current_course_time_left INTEGER NOT NULL)""")
+
 
 def insert_course(id, course_name, student, number_of_students, class_id, course_length):
     cursor.execute("INSERT INTO courses VALUES (?, ?, ?, ?, ?, ?)", [id, course_name, student,number_of_students,class_id,course_length])
 
 
-def insert_student(gradetxt, count):
-   cursor.execute("INSERT INTO students VALUES (?, ?)",  [gradetxt, count])
+def insert_student(grade, count):
+    cursor.execute("INSERT INTO students VALUES (?, ?)",  [grade, count])
 
 
-def insert_classrooms(id, location):
-       cursor.execute("INSERT INTO classrooms VALUES (?, ? , ?, ?)", [id, location,0,0])
+def insert_classroom(id, location):
+    cursor.execute("INSERT INTO classrooms VALUES (?, ? , ?, ?)", [id, location,0,0])
 
-
-create_tables()
-with open(sys.argv[1]) as input:
-        for line in input:
-            line=line.split(',')
-            line = [x.strip() for x in line]
-            if line[0] == 'C':
-                 insert_course(line[1], line[2], line[3], line[4], line[5], line[6])
-            elif line[0] == 'R':
-                insert_classrooms(line[1], line[2])
-            if line[0] == 'S':
-                insert_student(line[1], line[2])
 
 def create_list_of_tuples(table):
     cursor.execute('SELECT * FROM ' + table)
-    ls = cursor.fetchall()
-    return ls
+    return cursor.fetchall()
+
 
 def print_table(list_of_tuples):
     for item in list_of_tuples:
         print(item)
 
-print('courses')
-print_table(create_list_of_tuples('courses'))
-print('students')
-print_table(create_list_of_tuples('students'))
-print('classrooms')
-print_table(create_list_of_tuples('classrooms'))
+
+def print_tables():
+    print('courses')
+    print_table(create_list_of_tuples('courses'))
+    print('students')
+    print_table(create_list_of_tuples('students'))
+    print('classrooms')
+    print_table(create_list_of_tuples('classrooms'))
+
+
+create_tables()
+# read the config file
+with open(sys.argv[1]) as configFile:
+        for line in configFile:
+            line = line.split(',')
+            line = [x.strip() for x in line]
+            if line[0] == 'C':
+                insert_course(line[1], line[2], line[3], line[4], line[5], line[6])
+            elif line[0] == 'R':
+                insert_classroom(line[1], line[2])
+            elif line[0] == 'S':
+                insert_student(line[1], line[2])
+
+print_tables()
+
+
 
 
